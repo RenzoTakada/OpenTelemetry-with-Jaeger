@@ -13,12 +13,6 @@ namespace Adapters.OpenTelemetry.Settings
 
 
 
-        public void Dispose()
-        {
-            this.ServiceName = null;
-            this.ServiceVersion = null;
-            this.AgentHost = null;
-            this.Endpoint = null;
-        }
+
     }
 }

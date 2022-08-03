@@ -1,5 +1,5 @@
 ﻿using Adapters.OpenTelemetry.Settings;
-
+using Microsoft.Extensions.Configuration;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -13,19 +13,24 @@ namespace Adapters.OpenTelemetry.Extensions
 
         public static IServiceCollection AddpenTelemetryAdapter(this IServiceCollection services)
         {
-            IConfiguration configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory())
-                       .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                       .Build();
-            services.Configure<OpenTelemetrySettings>(options => configuration.GetSection("OpenTelemetry").Bind(options));
-            var settings = new OpenTelemetrySettings()
-            {
-                ServiceName = "OpentelemetryTeste",
-                ServiceVersion = "1.0",
-                Endpoint = "http://localhost:5775/",
-                IsEnabled = true,
-            };
-            //var settings = new OpenTelemetrySettings();
-            //configuration.Bind("OpenTelemetry", settings);
+
+            IConfiguration configuration = new ConfigurationBuilder()
+              .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json")
+              .Build();
+
+            var settings = new OpenTelemetrySettings();
+            configuration.Bind("OpenTelemetry", settings);
+            // services.Configure<OpenTelemetrySettings>(options => configuration.GetSection("OpenTelemetry").Bind(options));
+            //var settings = new OpenTelemetrySettings()
+            //{
+            //    ServiceName = "OpentelemetryTeste",
+            //    ServiceVersion = "1.0",
+            //    Endpoint = "http://localhost:5775/",
+            //    IsEnabled = true,
+            //};
+
+
+
 
 
 
@@ -43,18 +48,18 @@ namespace Adapters.OpenTelemetry.Extensions
                 .CreateDefault()
                 .AddService(settings.ServiceName);
             opentelemetry.AddSource(settings.ServiceName)
-                .SetResourceBuilder(ResourceBuilder.CreateDefault()
-                 .AddService(serviceName: settings.ServiceName, serviceVersion: settings.ServiceVersion))
+            .SetResourceBuilder(ResourceBuilder.CreateDefault()
+             .AddService(serviceName: settings.ServiceName, serviceVersion: settings.ServiceVersion))
+            .SetSampler(new AlwaysOnSampler())
 
-
-                .AddJaegerExporter(jaegerOptions =>
-                {
-
-                    jaegerOptions.Endpoint = new Uri($"{settings.Endpoint}");
-                })
-                .AddHttpClientInstrumentation()
-                .AddAspNetCoreInstrumentation()
-                .AddConsoleExporter();
+            .AddJaegerExporter(jaegerOptions =>
+            {
+                //jaegerOptions.Protocol = JaegerExportProtocol.HttpBinaryThrift;
+                jaegerOptions.Endpoint = new Uri($"{settings.Endpoint}");
+            })
+            .AddHttpClientInstrumentation()
+            .AddAspNetCoreInstrumentation()
+            .AddConsoleExporter();
 
             //opentelemetry.AddSource(settings.ServiceName)
             //    .SetResourceBuilder(resourceBuilder)
